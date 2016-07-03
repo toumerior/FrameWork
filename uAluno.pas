@@ -30,18 +30,23 @@ type
     //classe
     [KeyField('MATRICULA')]
     [FieldName('MATRICULA')]
+    [PropriedadesCampo('MATRICULA', True)]
     property Matricula: string read FMatricula write setFMatricula;
 
     [FieldName('NOME_ALUNO')]
+    [PropriedadesCampo('NOME_ALUNO')]
     property Nome:string read FNomeAluno write setFNomeAluno;
 
     [FieldName('ENDERECO')]
+    [PropriedadesCampo('ENDERECO')]
     property Endereco:string read FEndereco write setFEndereco;
 
     [FieldName('TELEFONE')]
+    [PropriedadesCampo('TELEFONE')]
     property Telefone:string read FTelefone write setFTelefone;
 
     [FieldName('CPF')]
+    [PropriedadesCampo('CPF')]
     property CPF:string read FCPF write setFCPF;
 
     function ToString:string; override;

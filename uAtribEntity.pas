@@ -30,6 +30,16 @@ type  //nome do campo na tabela
     property Name: string read FName write FName;
   end;
 
+type
+  PropriedadesCampo = class(TCustomAttribute)
+  private
+    FName: String;
+    FChave: Boolean;
+  public
+    constructor Create(aName: String; aChave: Boolean = False);
+    property Name: string read FName write FName;
+    property Chave: Boolean read FChave write FChave;
+  end;
 
 implementation
 
@@ -46,6 +56,14 @@ end;
 constructor FieldName.Create(aName: String);
 begin
   FName := aName;
+end;
+
+{ DescricaoCampo }
+
+constructor PropriedadesCampo.Create(aName: String; aChave: Boolean = False);
+begin
+  FName := aName;
+  FChave := aChave;
 end;
 
 end.
