@@ -94,8 +94,8 @@ begin
      end;
   end;
 
-  strFields := Copy(strFields, 1, Length(strFields) - 1);
-  strValues := Copy(strValues, 1, Length(strValues) - 1);
+  strFields := Copy(strFields, 1, Length(strFields) - 2);
+  strValues := Copy(strValues, 1, Length(strValues) - 2);
   strInsert := strInsert + ' ( ' + strFields + ' )  values ( ' + strValues + ' )';
 
   try
