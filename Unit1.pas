@@ -4,12 +4,17 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, uAluno, uGenericDAO, Vcl.StdCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, uAluno, uGenericDAO, Vcl.StdCtrls,
+  FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf,
+  FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async,
+  FireDAC.Phys, FireDAC.Phys.Oracle, FireDAC.Phys.OracleDef, FireDAC.VCLUI.Wait,
+  Data.DB, FireDAC.Comp.Client;
 
 type
   TForm1 = class(TForm)
     Button1: TButton;
     btn1: TButton;
+    m: TMemo;
     procedure Button1Click(Sender: TObject);
     procedure btn1Click(Sender: TObject);
   private
@@ -35,9 +40,10 @@ begin
   aluno.Endereco := 'Lugar nenhum';
   aluno.Telefone := '2321';
   aluno.CPF := '04923311118';
+  aluno.ID_PESSOA := 1;
+  aluno.ID_PESSOA_MAIS := 3;
 
-  if TGenericDAO.Update(aluno) then
-    ShowMessage('Funfou');
+  m.Text := TGenericDAO.SelectBasico(aluno);
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
