@@ -134,11 +134,14 @@ var
   strCampos: string;
   adicionouWhere: Boolean;
 
+  TabelasInseridas: TDictionary<string, string>;
   ApelidoTabelas: TDictionary<string, string>;
   apelido_tab_estrangeira: string;
   tabela_estrangeira: string;
   tabela_principal: string;
   apelido_tab_principal: string;
+  x: string;
+  tipo_valor: string;
 
   i: Integer;
 
@@ -155,6 +158,8 @@ begin
   ApelidoTabelas := TDictionary<string, string>.Create;
   ApelidoTabelas.Add(tabela_principal, apelido_tab_principal);
 
+  TabelasInseridas := TDictionary<string, string>.Create;
+
   Contexto := TRttiContext.Create;
   TypObj := Contexto.GetType(TObject(Obj).ClassInfo);
 
@@ -163,36 +168,43 @@ begin
       if Atributo is PropriedadesCampo then begin
         strValor := EmptyStr;
 
-        case Prop.GetValue(TObject(Obj)).Kind of
-          tkWChar, tkLString, tkWString, tkString, tkChar, tkUString:
-            strValor := QuotedStr(Prop.GetValue(TObject(Obj)).AsString);
+        if not Prop.GetValue(TObject(Obj)).IsEmpty then
+        begin        
+          try
+            case Prop.GetValue(TObject(Obj)).Kind of
+              tkWChar, tkLString, tkWString, tkString, tkChar, tkUString: begin
+                tipo_valor := 'string';
+                strValor := QuotedStr(Prop.GetValue(TObject(Obj)).AsString);
+              end;
 
-          tkInteger, tkInt64:
-            strValor := IntToStr(Prop.GetValue(TObject(Obj)).AsInteger);
+              tkInteger, tkInt64: begin
+                tipo_valor := 'Integer';
+                strValor := IntToStr(Prop.GetValue(TObject(Obj)).AsInteger);
+              end;
 
-          tkFloat:
-            strValor := FloatToStr(Prop.GetValue(TObject(Obj)).AsExtended);
+              tkFloat: begin
+                tipo_valor := 'Float';
+                strValor := FloatToStr(Prop.GetValue(TObject(Obj)).AsExtended);
+              end;
 
-          else
-            raise Exception.Create('Tipo de campo não suportado!');
-        end;
+              else
+                raise Exception.Create('Tipo de campo não suportado!');
+            end;
+          except
+            on e: Exception do
+              raise Exception.Create('O valor informado (' + strValor + ') na propriedade ' + Prop.Name + ' no objeto ' + TObject(Obj).ClassName + 'não é compátivel com o tipo definido na classe (' + tipo_valor + ')!');
+          end;
+        end;           
+
+        apelido_tab_estrangeira := PropriedadesCampo(Atributo).Apelido_Tabela_Estrangeira;
 
         //Verificando se o campo em questão faz referência a uma coluna de outra tabela
         if PropriedadesCampo(Atributo).Coluna_Estrangeira <> EmptyStr then begin
           tabela_estrangeira := PropriedadesCampo(Atributo).Tabela_Estrangeira;
 
           //Verificando se já foi adicionado essa tabela estrangeira no inner
-          if not ApelidoTabelas.TryGetValue(tabela_estrangeira, apelido_tab_estrangeira) then begin
-            i := 0;
-
-            //Este loop é para definir o apelido_tab_estrangeira de 3 dígitos da tabela
-            while ApelidoTabelas.ContainsValue(Copy(tabela_estrangeira, 1, 2) + tabela_estrangeira[3] + IntToStr(i)) do
-              Inc(i);
-
-            //Se saiu do while, significa que o apelido_tab_estrangeira escolhido ainda não foi atribuído a nenhuma outra tabela
-            apelido_tab_estrangeira := Copy(tabela_estrangeira, 1, 2) + tabela_estrangeira[3] + IntToStr(i);
-            //Inserindo a tabela estrangeira e o apelido_tab_estrangeira no hash (dictionary)
-            ApelidoTabelas.Add(tabela_estrangeira, apelido_tab_estrangeira);
+          if not ApelidoTabelas.ContainsKey(apelido_tab_estrangeira) then begin
+            ApelidoTabelas.Add(apelido_tab_estrangeira, x);
 
             //Montando a ligação, pois se entrou aqui, significa que ainda não existia o inner com essa tabela...
             scriptLigacoes.Add(IfThen(PropriedadesCampo(Atributo).Tipo_Ligacao = Inner, 'inner ', 'left ') +  ' join ' + tabela_estrangeira + ' ' + apelido_tab_estrangeira);
@@ -202,13 +214,10 @@ begin
             scriptLigacoes.Add(EmptyStr);
           end
           else begin
-            //Buscando o apelido dessa tabela, pois já foi feito a ligação com a mesma
-            ApelidoTabelas.TryGetValue(tabela_estrangeira, apelido_tab_estrangeira);
-
             //Lembra que quando não existe a ligação com a tabela ainda, adicionamos uma linha em branco? Pois é, agora vamos adicionar o "AND" nela.
             i := scriptLigacoes.IndexOf(apelido_tab_estrangeira) + 2;
 
-            //POrém, pode ser um inner com 3 colunas ou mais. Por isso vamos procurar a próxima linha em branco antes de adicionar
+            //Porém, pode ser um inner com 3 colunas ou mais. Por isso vamos procurar a próxima linha em branco antes de adicionar
             while scriptLigacoes[i] <> EmptyStr do
               Inc(i);
 
@@ -219,14 +228,14 @@ begin
           strCampos := strCampos + '  ' + apelido_tab_estrangeira + '.' + PropriedadesCampo(Atributo).Name + ', ' + sLineBreak;
         end
         else
-          strCampos := strCampos + '  ' + apelido_tab_principal + '.' + PropriedadesCampo(Atributo).Name + ', ' + sLineBreak;
+          strCampos := strCampos + '  ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + ', ' + sLineBreak;
 
 
         if strValor <> EmptyStr then begin
           if adicionouWhere then
-            strCondicaoWhere := strCondicaoWhere + 'and ' + apelido_tab_principal + '.' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak
+            strCondicaoWhere := strCondicaoWhere + 'and ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak
           else begin
-            strCondicaoWhere := 'where ' + apelido_tab_principal + '.' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak;
+            strCondicaoWhere := 'where ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak;
             adicionouWhere := True;
           end;
         end;

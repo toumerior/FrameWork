@@ -42,13 +42,15 @@ type
     FSomente_Leitura: Boolean;
     FColuna_Estrangeira: string;
     FTipo_Ligacao: TTipoLigacao;
+    FApelido_Tabela_Estrangeira: string;
   public
-    constructor Create(aName: String; aChave: Boolean; aSomente_Leitura: Boolean; aTabela_Estrangeira: string; aColuna_Estrangeira: string; aTipo_Ligacao: TTipoLigacao);
+    constructor Create(aName: String; aChave: Boolean; aSomente_Leitura: Boolean; aTabela_Estrangeira: string; aColuna_Estrangeira: string; aApelido_Tabela_Estrangeira: string; aTipo_Ligacao: TTipoLigacao);
     property Name: string read FName write FName;
     property Chave: Boolean read FChave write FChave;
     property Somente_Leitura: Boolean read FSomente_Leitura write FSomente_Leitura;
     property Tabela_Estrangeira: string read FTabela_Estrangeira write FTabela_Estrangeira;
     property Coluna_Estrangeira: string read FColuna_Estrangeira write FColuna_Estrangeira;
+    property Apelido_Tabela_Estrangeira: string read FApelido_Tabela_Estrangeira write FApelido_Tabela_Estrangeira;
     property Tipo_Ligacao: TTipoLigacao read FTipo_Ligacao write FTipo_Ligacao;
   end;
 
@@ -71,13 +73,14 @@ end;
 
 { DescricaoCampo }
 
-constructor PropriedadesCampo.Create(aName: String; aChave: Boolean; aSomente_Leitura: Boolean; aTabela_Estrangeira: string; aColuna_Estrangeira: string; aTipo_Ligacao: TTipoLigacao);
+constructor PropriedadesCampo.Create(aName: String; aChave: Boolean; aSomente_Leitura: Boolean; aTabela_Estrangeira: string; aColuna_Estrangeira: string; aApelido_Tabela_Estrangeira: string; aTipo_Ligacao: TTipoLigacao);
 begin
   FName := aName;
   FChave := aChave;
   FSomente_Leitura := aSomente_Leitura;
   FTabela_Estrangeira := aTabela_Estrangeira;
   FColuna_Estrangeira := aColuna_Estrangeira;
+  FApelido_Tabela_Estrangeira := aApelido_Tabela_Estrangeira;
   FTipo_Ligacao := aTipo_Ligacao;
 end;
 

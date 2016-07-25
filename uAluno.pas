@@ -20,6 +20,7 @@ type
     FID_PESSOA: Integer;
     FID_PESSOA_MAIS: Integer;
     FID_PRODUTO: Integer;
+    FID_NOVO: Integer;
 
   //colocar aqui todos os métodos sets para cada uma das propriedades acima
     procedure setFMatricula(value:string);
@@ -30,40 +31,45 @@ type
     procedure setID_PESSOA(const Value: Integer);
     procedure setID_PESSOA_MAIS(const Value: Integer);
     procedure setID_PRODUTO(const Value: Integer);
+    procedure setID_NOVO(const Value: Integer);
 
   public
     //colocar aqui todas as propriedades públicas de acesso aos objetos dessa
     //classe
+    [PropriedadesCampo('ID_PRODUTO', False, True, 'PRODUTOS', 'ID_PRODUTO', 'PRO', Left)]
+    property ID_PRODUTO: Integer read FID_PRODUTO write setID_PRODUTO;
+
     [KeyField('MATRICULA')]
     [FieldName('MATRICULA')]
-    [PropriedadesCampo('MATRICULA', True, True, '', '', Inner)]
+    [PropriedadesCampo('MATRICULA', True, True, '', '', '', Inner)]
     property Matricula: string read FMatricula write setFMatricula;
 
     [FieldName('NOME_ALUNO')]
-    [PropriedadesCampo('NOME_ALUNO', False, True, '', '', Inner)]
+    [PropriedadesCampo('NOME_ALUNO', False, True, '', '', '', Inner)]
     property Nome:string read FNomeAluno write setFNomeAluno;
 
     [FieldName('ENDERECO')]
-    [PropriedadesCampo('ENDERECO', False, True, '', '', Inner)]
+    [PropriedadesCampo('ENDERECO', False, True, '', '', '', Inner)]
     property Endereco:string read FEndereco write setFEndereco;
 
     [FieldName('TELEFONE')]
-    [PropriedadesCampo('TELEFONE', False, True, '', '', Inner)]
+    [PropriedadesCampo('TELEFONE', False, True, '', '', '', Inner)]
     property Telefone:string read FTelefone write setFTelefone;
 
     [FieldName('CPF')]
-    [PropriedadesCampo('CPF', False, True, '', '', Inner)]
+    [PropriedadesCampo('CPF', False, True, '', '', '', Inner)]
     property CPF:string read FCPF write setFCPF;
 
     [FieldName('ID_PESSOA')]
-    [PropriedadesCampo('ID_PESSOA', False, True, 'PESSOAS', 'ID_PESSOA', Inner)]
+    [PropriedadesCampo('ID_PESSOA', False, True, 'PESSOAS', 'ID_PESSOA', 'PES1', Inner)]
     property ID_PESSOA: Integer read FID_PESSOA write setID_PESSOA;
 
-    [PropriedadesCampo('ID_PESSOA_MAIS', False, True, 'PESSOAS', 'ID_PESSOA_MAIS', Inner)]
+    [PropriedadesCampo('ID_PESSOA', False, True, 'PESSOAS', 'ID_NOVO', 'PES1', Inner)]
+    property ID_NOVO: Integer read FID_NOVO write setID_NOVO;
+
+    [PropriedadesCampo('ID_PESSOA_MAIS', False, True, 'PESSOAS', 'ID_PESSOA_MAIS', 'PES2', Inner)]
     property ID_PESSOA_MAIS: Integer read FID_PESSOA_MAIS write setID_PESSOA_MAIS;
 
-    [PropriedadesCampo('ID_PRODUTO', False, True, 'PRODUTOS', 'ID_PRODUTO', Left)]
-    property ID_PRODUTO: Integer read FID_PRODUTO write setID_PRODUTO;
 
     function ToString:string; override;
 end;
@@ -88,6 +94,11 @@ end;
 procedure TAluno.setFTelefone(value:string);
 begin
   FTelefone:= value;
+end;
+
+procedure TAluno.setID_NOVO(const Value: Integer);
+begin
+  FID_NOVO := Value;
 end;
 
 procedure TAluno.setID_PESSOA(const Value: Integer);
