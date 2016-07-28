@@ -3,21 +3,29 @@ unit uGenericDAO;
 interface
 
 uses
-  RTTI, TypInfo, SysUtils, uAtribEntity, System.Generics.Collections, System.StrUtils;
+  RTTI, TypInfo, SysUtils, uAtribEntity, System.Generics.Collections, System.StrUtils, uTiposPrimitivos;
 
 type
-  TGenericDAO = class
+  TGenericDAO = class(TObject)
   private
-    class function GetTableName<T: class>(Obj: T): string;
+    FClass: TObject;
+
+    function GetTableName: string;
+
     class function GetFields(Atributos: TArray<TCustomAttribute>): string;
   public
-    class function Insert<T: class>(Obj: T): Boolean;
-    class function Update<T: class>(Obj: T): Boolean;
+    constructor Create; virtual; abstract;
 
-    class function SelectAll<T: class>(Obj: T): string;
-    class function SelectBasico<T: class>(Obj: T): string;
+    function SelectBasico: string;
+
+    property Classe: TObject read FClass write FClass;
+
+    class function Insert(Obj: TObject): Boolean;
+    class function Update(Obj: TObject): Boolean;
+
+    class function SelectAll(Obj: TObject): string;
+
   end;
-
 
 implementation
 
@@ -26,6 +34,7 @@ uses
 
 const
   cIgualdade = ' = ';
+  cIsNull    = ' is null ';
 
 class function TGenericDAO.GetFields(Atributos: TArray<TCustomAttribute>): string;
 var
@@ -42,7 +51,7 @@ begin
   Exit(Copy(Fields, 1, Length(Fields) - 2));
 end;
 
-class function TGenericDAO.GetTableName<T>(Obj: T): string;
+function TGenericDAO.GetTableName: string;
 var
   Contexto: TRttiContext;
   TypObj: TRttiType;
@@ -50,15 +59,15 @@ var
 
 begin
   Contexto := TRttiContext.Create;
-  TypObj := Contexto.GetType(TObject(Obj).ClassInfo);
+  TypObj := Contexto.GetType(FClass.ClassInfo);
   for Atributo in TypObj.GetAttributes do
   begin
-    if Atributo is TableName then
+    if Atributo is NomeTabela then
       Exit(TableName(Atributo).Name);
   end;
 end;
 
-class function TGenericDAO.Insert<T>(Obj: T): Boolean;
+class function TGenericDAO.Insert(Obj: TObject): Boolean;
 var
   Contexto: TRttiContext;
   TypObj: TRttiType;
@@ -71,25 +80,25 @@ begin
   strFields := EmptyStr;
   strValues := EmptyStr;
 
-  strInsert := 'insert into ' + GetTableName(Obj);
+//  strInsert := 'insert into ' + GetTableName;
 
   Contexto := TRttiContext.Create;
-  TypObj := Contexto.GetType(TObject(Obj).ClassInfo);
+  TypObj := Contexto.GetType(Obj.ClassInfo);
 
   for Prop in TypObj.GetProperties do begin
     for Atributo in Prop.GetAttributes do begin
         if Atributo is FieldName then begin
            strFields := strFields + FieldName(Atributo).Name  + ', ';
-           case Prop.GetValue(TObject(Obj)).Kind of
+           case Prop.GetValue(Obj).Kind of
 
              tkWChar, tkLString, tkWString, tkString, tkChar, tkUString:
-               strValues := strValues + QuotedStr(Prop.GetValue(TObject(Obj)).AsString) + ', ';
+               strValues := strValues + QuotedStr(Prop.GetValue(Obj).AsString) + ', ';
 
              tkInteger, tkInt64:
-               strValues := strValues + IntToStr(Prop.GetValue(TObject(Obj)).AsInteger) + ', ';
+               strValues := strValues + IntToStr(Prop.GetValue(Obj).AsInteger) + ', ';
 
              tkFloat:
-               strValues := strValues + FloatToStr(Prop.GetValue(TObject(Obj)).AsExtended) + ', ';
+               strValues := strValues + FloatToStr(Prop.GetValue(Obj).AsExtended) + ', ';
 
              else
                raise Exception.Create('Type not Supported');
@@ -113,14 +122,14 @@ begin
   end;
 end;
 
-class function TGenericDAO.SelectAll<T>(Obj: T): string;
+class function TGenericDAO.SelectAll(Obj: TObject): string;
 var
   sql: string;
 begin
-  Result := 'SELECT T1.* from ' + GetTableName(Obj) + 'T1';
+//  Result := 'SELECT T1.* from ' + GetTableName(Obj) + 'T1';
 end;
 
-class function TGenericDAO.SelectBasico<T>(Obj: T): string;
+function TGenericDAO.SelectBasico: string;
 var
   Contexto: TRttiContext;
   TypObj: TRttiType;
@@ -145,15 +154,17 @@ var
 
   i: Integer;
 
+  Value: TString;
+  filtrar_campo: Boolean;
+
 begin
-  scriptSelect := TStringList.Create;
   scriptLigacoes := TStringList.Create;
   strValor := EmptyStr;
   strCondicaoWhere := EmptyStr;
   strCampos := EmptyStr;
   adicionouWhere := False;
 
-  tabela_principal := GetTableName(Obj);
+  tabela_principal := GetTableName;
   apelido_tab_principal := Copy(tabela_principal, 1, 3);
   ApelidoTabelas := TDictionary<string, string>.Create;
   ApelidoTabelas.Add(tabela_principal, apelido_tab_principal);
@@ -161,54 +172,84 @@ begin
   TabelasInseridas := TDictionary<string, string>.Create;
 
   Contexto := TRttiContext.Create;
-  TypObj := Contexto.GetType(TObject(Obj).ClassInfo);
+  TypObj := Contexto.GetType(FClass.ClassInfo);
 
+  //Buscando as propertys do objeto
   for Prop in TypObj.GetProperties do begin
-    for Atributo in Prop.GetAttributes do begin
-      if Atributo is PropriedadesCampo then begin
-        strValor := EmptyStr;
+//    Value := nil;
+    filtrar_campo := True;
 
-        if not Prop.GetValue(TObject(Obj)).IsEmpty then
-        begin        
-          try
-            case Prop.GetValue(TObject(Obj)).Kind of
-              tkWChar, tkLString, tkWString, tkString, tkChar, tkUString: begin
-                tipo_valor := 'string';
-                strValor := QuotedStr(Prop.GetValue(TObject(Obj)).AsString);
-              end;
+    //Verificando se existe valor
+    if not Prop.GetValue(FClass).IsEmpty then
+    begin
+      strValor := EmptyStr;
 
-              tkInteger, tkInt64: begin
-                tipo_valor := 'Integer';
-                strValor := IntToStr(Prop.GetValue(TObject(Obj)).AsInteger);
-              end;
+      try
+        case Prop.GetValue(FClass).Kind of
+          tkClass: Break;
 
-              tkFloat: begin
-                tipo_valor := 'Float';
-                strValor := FloatToStr(Prop.GetValue(TObject(Obj)).AsExtended);
-              end;
+          tkRecord: begin
+            //Se for string
+            if Prop.GetValue(Fclass).IsType(TypeInfo(TString)) then begin
+              tipo_valor := 'TString';
 
+              TString(Value) := Prop.GetValue(FClass).AsType<TString>;
+
+              if Prop.GetValue(FClass).AsType<TString>.HasValue then
+                strValor := QuotedStr(TString(Value))
+              else if Value.FiltrarNull then
+                strValor := ' is null '
               else
-                raise Exception.Create('Tipo de campo não suportado!');
-            end;
-          except
-            on e: Exception do
-              raise Exception.Create('O valor informado (' + strValor + ') na propriedade ' + Prop.Name + ' no objeto ' + TObject(Obj).ClassName + 'não é compátivel com o tipo definido na classe (' + tipo_valor + ')!');
-          end;
-        end;           
+               filtrar_campo := False;
+            end
+            //Se for inteiro
+            else if Prop.GetValue(Fclass).IsType(TypeInfo(TInteger)) then begin
+              tipo_valor := 'TInteger';
 
-        apelido_tab_estrangeira := PropriedadesCampo(Atributo).Apelido_Tabela_Estrangeira;
+              TInteger(Value) := Prop.GetValue(FClass).AsType<TInteger>;
+
+              if Value.HasValue then
+                strValor := IntToStr(TInteger(Value))
+              else if Value.FiltrarNull then
+                strValor := ' is null '
+              else
+                filtrar_campo := False;
+            end;
+          end;
+
+          tkFloat: begin
+            tipo_valor := 'Float';
+            strValor := FloatToStr(Prop.GetValue(FClass).AsExtended);
+          end;
+
+          else
+            raise Exception.Create('Tipo de campo não suportado!');
+        end;
+      except
+        on e: Exception do
+          raise Exception.Create('O valor informado (' + strValor + ') na propriedade "' + Prop.Name + '" no objeto ' + FClass.ClassName + ' não é compátivel com o tipo definido na classe (' + tipo_valor + ')!');
+      end;
+    end;
+
+    apelido_tab_estrangeira := EmptyStr;
+
+    for Atributo in Prop.GetAttributes do begin
+      if Atributo is NomeCampo then
+        strCampos := strCampos + '  ' + apelido_tab_principal + '.' + NomeCampo(Atributo).Nome_Coluna + ', ' + sLineBreak
+      else if Atributo is ChaveEstrangeira then begin
+        apelido_tab_estrangeira := ChaveEstrangeira(Atributo).Apelido_Tabela_Estrangeira;
 
         //Verificando se o campo em questão faz referência a uma coluna de outra tabela
-        if PropriedadesCampo(Atributo).Coluna_Estrangeira <> EmptyStr then begin
-          tabela_estrangeira := PropriedadesCampo(Atributo).Tabela_Estrangeira;
+        if ChaveEstrangeira(Atributo).Coluna_Estrangeira <> EmptyStr then begin
+          tabela_estrangeira := ChaveEstrangeira(Atributo).Tabela_Estrangeira;
 
           //Verificando se já foi adicionado essa tabela estrangeira no inner
           if not ApelidoTabelas.ContainsKey(apelido_tab_estrangeira) then begin
             ApelidoTabelas.Add(apelido_tab_estrangeira, x);
 
             //Montando a ligação, pois se entrou aqui, significa que ainda não existia o inner com essa tabela...
-            scriptLigacoes.Add(IfThen(PropriedadesCampo(Atributo).Tipo_Ligacao = Inner, 'inner ', 'left ') +  ' join ' + tabela_estrangeira + ' ' + apelido_tab_estrangeira);
-            scriptLigacoes.Add('on ' + apelido_tab_principal + '.' + PropriedadesCampo(Atributo).Name + ' = ' + apelido_tab_estrangeira +  '.' + PropriedadesCampo(Atributo).Coluna_Estrangeira);
+            scriptLigacoes.Add(IfThen(ChaveEstrangeira(Atributo).Tipo_Ligacao = Inner, 'inner ', 'left ') +  ' join ' + tabela_estrangeira + ' ' + apelido_tab_estrangeira);
+            scriptLigacoes.Add('on ' + apelido_tab_principal + '.' + ChaveEstrangeira(Atributo).Coluna_Estrangeira + ' = ' + apelido_tab_estrangeira +  '.' + ChaveEstrangeira(Atributo).Coluna_Estrangeira);
 
             //Adicionando essa linha vazia, pois a mesma irá servir para quando for necessário adicionar mais um filtro no inner dessa tabela...
             scriptLigacoes.Add(EmptyStr);
@@ -222,23 +263,20 @@ begin
               Inc(i);
 
             //Lembra que quando não existe a ligação com a tabela ainda, adicionamos uma linha em branco? Pois é, agora vamos adicionar o "AND" nela.
-            scriptLigacoes.Insert(i, 'and ' + apelido_tab_principal + '.' + PropriedadesCampo(Atributo).Name + ' = ' + apelido_tab_estrangeira +  '.' + PropriedadesCampo(Atributo).Coluna_Estrangeira);
+            scriptLigacoes.Insert(i, 'and ' + apelido_tab_principal + '.' + ChaveEstrangeira(Atributo).Coluna_Estrangeira + ' = ' + apelido_tab_estrangeira +  '.' + ChaveEstrangeira(Atributo).Coluna_Estrangeira);
           end;
 
-          strCampos := strCampos + '  ' + apelido_tab_estrangeira + '.' + PropriedadesCampo(Atributo).Name + ', ' + sLineBreak;
-        end
-        else
-          strCampos := strCampos + '  ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + ', ' + sLineBreak;
-
-
-        if strValor <> EmptyStr then begin
-          if adicionouWhere then
-            strCondicaoWhere := strCondicaoWhere + 'and ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak
-          else begin
-            strCondicaoWhere := 'where ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak;
-            adicionouWhere := True;
-          end;
+          strCampos := strCampos + '  ' + apelido_tab_estrangeira + '.' + ChaveEstrangeira(Atributo).Coluna_Estrangeira + ', ' + sLineBreak;
         end;
+      end;
+    end; //for Atributo
+
+    if filtrar_campo then begin
+      if adicionouWhere then
+        strCondicaoWhere := strCondicaoWhere + 'and ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + IfThen(not Value.FiltrarNull, ' = ') + strValor + sLineBreak
+      else begin
+        strCondicaoWhere := 'where ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + IfThen(not Value.FiltrarNull, ' = ') + strValor + sLineBreak;
+        adicionouWhere := True;
       end;
     end;
   end;
@@ -247,6 +285,7 @@ begin
   strCampos := Copy(strCampos, 0, Length(strCampos) - 1);
   strCondicaoWhere := Trim(strCondicaoWhere);
 
+  scriptSelect := TStringList.Create;
   scriptSelect.Add('select');
   scriptSelect.Add('  ' + strCampos);
   scriptSelect.Add('from ');
@@ -272,7 +311,7 @@ begin
   scriptSelect.Free;
 end;
 
-class function TGenericDAO.Update<T>(Obj: T): Boolean;
+class function TGenericDAO.Update(Obj: TObject): Boolean;
 var
   Contexto: TRttiContext;
   TypObj: TRttiType;
@@ -291,25 +330,25 @@ begin
   strCampos := EmptyStr;
   adicionouWhere := False;
 
-  scriptUpdate.Add('update ' + GetTableName(Obj) + ' set ');
+//  scriptUpdate.Add('update ' + GetTableName(Obj) + ' set ');
 
   Contexto := TRttiContext.Create;
-  TypObj := Contexto.GetType(TObject(Obj).ClassInfo);
+  TypObj := Contexto.GetType(Obj.ClassInfo);
 
   for Prop in TypObj.GetProperties do begin
     for Atributo in Prop.GetAttributes do begin
       if Atributo is PropriedadesCampo then begin
         strValor := EmptyStr;
 
-        case Prop.GetValue(TObject(Obj)).Kind of
+        case Prop.GetValue(Obj).Kind of
           tkWChar, tkLString, tkWString, tkString, tkChar, tkUString:
-            strValor := QuotedStr(Prop.GetValue(TObject(Obj)).AsString);
+            strValor := QuotedStr(Prop.GetValue(Obj).AsString);
 
           tkInteger, tkInt64:
-            strValor := IntToStr(Prop.GetValue(TObject(Obj)).AsInteger);
+            strValor := IntToStr(Prop.GetValue(Obj).AsInteger);
 
           tkFloat:
-            strValor := FloatToStr(Prop.GetValue(TObject(Obj)).AsExtended);
+            strValor := FloatToStr(Prop.GetValue(Obj).AsExtended);
         else
           raise Exception.Create('Tipo de campo não suportado!');
         end;
