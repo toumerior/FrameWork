@@ -123,8 +123,6 @@ begin
 end;
 
 class function TGenericDAO.SelectAll(Obj: TObject): string;
-var
-  sql: string;
 begin
 //  Result := 'SELECT T1.* from ' + GetTableName(Obj) + 'T1';
 end;
@@ -143,7 +141,6 @@ var
   strCampos: string;
   adicionouWhere: Boolean;
 
-  TabelasInseridas: TDictionary<string, string>;
   ApelidoTabelas: TDictionary<string, string>;
   apelido_tab_estrangeira: string;
   tabela_estrangeira: string;
@@ -154,8 +151,27 @@ var
 
   i: Integer;
 
-  Value: TString;
+  value_str: TString;
+  value_int: TInteger;
+  value_double: TDouble;
+  value_date: TDate;
+
   filtrar_campo: Boolean;
+
+  function Clausula: string;
+  begin
+    if adicionouWhere then
+      Result := ' and '
+    else begin
+      adicionouWhere := True;
+      Result := ' where ';
+    end;
+  end;
+
+  function strIgualdade: string;
+  begin
+    Result := IfThen(strValor <> ' is null ', ' = ');
+  end;
 
 begin
   scriptLigacoes := TStringList.Create;
@@ -168,8 +184,6 @@ begin
   apelido_tab_principal := Copy(tabela_principal, 1, 3);
   ApelidoTabelas := TDictionary<string, string>.Create;
   ApelidoTabelas.Add(tabela_principal, apelido_tab_principal);
-
-  TabelasInseridas := TDictionary<string, string>.Create;
 
   Contexto := TRttiContext.Create;
   TypObj := Contexto.GetType(FClass.ClassInfo);
@@ -186,42 +200,59 @@ begin
 
       try
         case Prop.GetValue(FClass).Kind of
+          //Tive que fazer isso porque o RTTI percorre também as propertys da classe pai
           tkClass: Break;
 
           tkRecord: begin
-            //Se for string
             if Prop.GetValue(Fclass).IsType(TypeInfo(TString)) then begin
               tipo_valor := 'TString';
 
-              TString(Value) := Prop.GetValue(FClass).AsType<TString>;
+              value_str := Prop.GetValue(FClass).AsType<TString>;
 
-              if Prop.GetValue(FClass).AsType<TString>.HasValue then
-                strValor := QuotedStr(TString(Value))
-              else if Value.FiltrarNull then
+              if value_str.HasValue then
+                strValor := QuotedStr(value_str)
+              else if value_str.FiltrarNull then
                 strValor := ' is null '
               else
                filtrar_campo := False;
             end
-            //Se for inteiro
             else if Prop.GetValue(Fclass).IsType(TypeInfo(TInteger)) then begin
               tipo_valor := 'TInteger';
 
-              TInteger(Value) := Prop.GetValue(FClass).AsType<TInteger>;
+              value_int := Prop.GetValue(FClass).AsType<TInteger>;
 
-              if Value.HasValue then
-                strValor := IntToStr(TInteger(Value))
-              else if Value.FiltrarNull then
+              if value_int.HasValue then
+                strValor := IntToStr(value_int)
+              else if value_int.FiltrarNull then
                 strValor := ' is null '
               else
                 filtrar_campo := False;
-            end;
-          end;
+            end
+            else if Prop.GetValue(Fclass).IsType(TypeInfo(TDouble)) then begin
+              tipo_valor := 'TDouble';
 
-          tkFloat: begin
-            tipo_valor := 'Float';
-            strValor := FloatToStr(Prop.GetValue(FClass).AsExtended);
-          end;
+              value_double := Prop.GetValue(FClass).AsType<TDouble>;
 
+              if value_double.HasValue then
+                strValor := FloatToStr(value_double)
+              else if value_double.FiltrarNull then
+                strValor := ' is null '
+              else
+                filtrar_campo := False;
+            end
+            else if Prop.GetValue(Fclass).IsType(TypeInfo(TDate)) then begin
+              tipo_valor := 'TDate';
+
+              value_date := Prop.GetValue(FClass).AsType<TDate>;
+
+              if value_date.HasValue then
+                strValor := DateTimeToStr(value_date)
+              else if value_date.FiltrarNull then
+                strValor := ' is null '
+              else
+                filtrar_campo := False;
+            end
+          end;
           else
             raise Exception.Create('Tipo de campo não suportado!');
         end;
@@ -271,14 +302,8 @@ begin
       end;
     end; //for Atributo
 
-    if filtrar_campo then begin
-      if adicionouWhere then
-        strCondicaoWhere := strCondicaoWhere + 'and ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + IfThen(not Value.FiltrarNull, ' = ') + strValor + sLineBreak
-      else begin
-        strCondicaoWhere := 'where ' + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + IfThen(not Value.FiltrarNull, ' = ') + strValor + sLineBreak;
-        adicionouWhere := True;
-      end;
-    end;
+    if filtrar_campo then
+      strCondicaoWhere := strCondicaoWhere + Clausula + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + strIgualdade + strValor + sLineBreak;
   end;
 
   strCampos := Trim(strCampos);

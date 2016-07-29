@@ -42,7 +42,7 @@ begin
 //  produto.NOME := 'OI';
 //  produto.ID_MARCA := 10;
 //  produto.Classe := TObject(produto);
-  produto.NOME.FiltrarNull := True;
+  produto.Nome.FiltrarNull := True;
 
   m.Text := produto.SelectBasico;
 end;

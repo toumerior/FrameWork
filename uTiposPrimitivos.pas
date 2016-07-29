@@ -38,7 +38,8 @@ type
   TString = Nullable<string>;
   TInteger = Nullable<Integer>;
   TDate = Nullable<TDateTime>;
-  TFloat = Nullable<Double>;
+  TDouble = Nullable<Double>;
+  TVariant = Nullable<Variant>;
 
 procedure SetFlagInterface(var Intf: IInterface);
 
