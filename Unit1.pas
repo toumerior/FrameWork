@@ -16,9 +16,11 @@ type
     btn1: TButton;
     m: TMemo;
     Button2: TButton;
+    Button3: TButton;
     procedure Button1Click(Sender: TObject);
     procedure btn1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -42,24 +44,22 @@ begin
 //  produto.NOME := 'OI';
 //  produto.ID_MARCA := 10;
 //  produto.Classe := TObject(produto);
-  produto.Nome.FiltrarNull := True;
+  produto.Nome.Value_Null := True;
 
   m.Text := produto.SelectBasico;
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-  aluno: TAluno;
+  produto: TProduto;
 begin
-//  aluno := TAluno.Create;
-  aluno.Nome := 'BRUNO';
-  aluno.Matricula := '0028';
-  aluno.Endereco := 'Lugar nenhum';
-  aluno.Telefone := '2321';
-  aluno.CPF := '04923311118';
+  produto := TProduto.Create;
+  produto.ID_PRODUTO := 1;
+  produto.NOME := 'OI';
+  produto.ID_MARCA := 10;
+  produto.Classe := TObject(produto);
 
-//  if TGenericDAO.Insert(aluno) then
-//    ShowMessage('Funfou');
+  m.Text := produto.SelectBasico;
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
@@ -69,6 +69,19 @@ var
 begin
   x := 2;
 
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+var
+  produto: TProduto;
+begin
+  produto := TProduto.Create;
+  produto.ID_PRODUTO := 1;
+  produto.NOME := 'OI';
+  produto.ID_MARCA := 10;
+  produto.Classe := TObject(produto);
+
+  m.Text := produto.Insert;
 end;
 
 end.

@@ -14,8 +14,8 @@ object Form1: TForm1
   PixelsPerInch = 96
   TextHeight = 13
   object Button1: TButton
-    Left = 80
-    Top = 24
+    Left = 8
+    Top = 8
     Width = 75
     Height = 25
     Caption = 'Button1'
@@ -23,8 +23,8 @@ object Form1: TForm1
     OnClick = Button1Click
   end
   object btn1: TButton
-    Left = 200
-    Top = 32
+    Left = 128
+    Top = 55
     Width = 75
     Height = 25
     Caption = 'Select'
@@ -39,12 +39,21 @@ object Form1: TForm1
     TabOrder = 2
   end
   object Button2: TButton
-    Left = 368
-    Top = 24
+    Left = 89
+    Top = 8
     Width = 75
     Height = 25
     Caption = 'Button2'
     TabOrder = 3
     OnClick = Button2Click
+  end
+  object Button3: TButton
+    Left = 209
+    Top = 55
+    Width = 75
+    Height = 25
+    Caption = 'Insert'
+    TabOrder = 4
+    OnClick = Button3Click
   end
 end

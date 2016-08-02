@@ -10,17 +10,17 @@ type
   private
     FClass: TObject;
 
-    function GetTableName: string;
+    function GetNomeTabela: string;
 
     class function GetFields(Atributos: TArray<TCustomAttribute>): string;
   public
     constructor Create; virtual; abstract;
 
     function SelectBasico: string;
+    function Insert: string;
 
     property Classe: TObject read FClass write FClass;
 
-    class function Insert(Obj: TObject): Boolean;
     class function Update(Obj: TObject): Boolean;
 
     class function SelectAll(Obj: TObject): string;
@@ -37,21 +37,21 @@ const
   cIsNull    = ' is null ';
 
 class function TGenericDAO.GetFields(Atributos: TArray<TCustomAttribute>): string;
-var
-  Atributo: TCustomAttribute;
-  Fields: string;
+//var
+//  Atributo: TCustomAttribute;
+//  Fields: string;
 begin
-  Fields := EmptyStr;
-
-  for Atributo in Atributos do begin
-    if Atributo is FieldName then
-      Fields := Fields + FieldName(Atributo).Name + ', ';
-  end;
-
-  Exit(Copy(Fields, 1, Length(Fields) - 2));
+//  Fields := EmptyStr;
+//
+//  for Atributo in Atributos do begin
+//    if Atributo is FieldName then
+//      Fields := Fields + FieldName(Atributo).Name + ', ';
+//  end;
+//
+//  Exit(Copy(Fields, 1, Length(Fields) - 2));
 end;
 
-function TGenericDAO.GetTableName: string;
+function TGenericDAO.GetNomeTabela: string;
 var
   Contexto: TRttiContext;
   TypObj: TRttiType;
@@ -63,57 +63,113 @@ begin
   for Atributo in TypObj.GetAttributes do
   begin
     if Atributo is NomeTabela then
-      Exit(TableName(Atributo).Name);
+      Exit(NomeTabela(Atributo).Nome_Tabela);
   end;
 end;
 
-class function TGenericDAO.Insert(Obj: TObject): Boolean;
+function TGenericDAO.Insert: string;
 var
+  i: Integer;
+  indice_DadosColuna: Integer;
   Contexto: TRttiContext;
   TypObj: TRttiType;
   Prop: TRttiProperty;
-  strInsert, strFields, strValues: String;
+  comando_insert, campos, valores: String;
+  tipo_valor: string;
   Atributo: TCustomAttribute;
+  possui_valor: Boolean;
+
+  valor: string;
+  value_str: TString;
+  value_int: TInteger;
+  value_double: TDouble;
+  value_date: TDate;
 
 begin
-  strInsert := EmptyStr;
-  strFields := EmptyStr;
-  strValues := EmptyStr;
+  comando_insert := EmptyStr;
+  campos := EmptyStr;
+  valores := EmptyStr;
 
-//  strInsert := 'insert into ' + GetTableName;
+  comando_insert := 'insert into ' + GetNomeTabela;
 
   Contexto := TRttiContext.Create;
-  TypObj := Contexto.GetType(Obj.ClassInfo);
+  TypObj := Contexto.GetType(FClass.ClassInfo);
 
   for Prop in TypObj.GetProperties do begin
-    for Atributo in Prop.GetAttributes do begin
-        if Atributo is FieldName then begin
-           strFields := strFields + FieldName(Atributo).Name  + ', ';
-           case Prop.GetValue(Obj).Kind of
+    try
+      case Prop.GetValue(FClass).Kind of
+        tkClass: Break;
 
-             tkWChar, tkLString, tkWString, tkString, tkChar, tkUString:
-               strValues := strValues + QuotedStr(Prop.GetValue(Obj).AsString) + ', ';
+        tkRecord: begin
+          if Prop.GetValue(Fclass).IsType(TypeInfo(TString)) then begin
+            tipo_valor := 'TString';
 
-             tkInteger, tkInt64:
-               strValues := strValues + IntToStr(Prop.GetValue(Obj).AsInteger) + ', ';
+            value_str := Prop.GetValue(FClass).AsType<TString>;
 
-             tkFloat:
-               strValues := strValues + FloatToStr(Prop.GetValue(Obj).AsExtended) + ', ';
+            if value_str.HasValue then
+              valor := QuotedStr(value_str) + ', '
+            else
+              valor := 'null' + ', ';
+          end
+          else if Prop.GetValue(Fclass).IsType(TypeInfo(TInteger)) then begin
+            tipo_valor := 'TInteger';
 
-             else
-               raise Exception.Create('Type not Supported');
-           end;
-       end;
-     end;
+            value_int := Prop.GetValue(FClass).AsType<TInteger>;
+
+            if value_int.HasValue then
+              valor := IntToStr(value_int) + ', '
+            else
+              valor := 'null' + ', ';
+          end
+          else if Prop.GetValue(Fclass).IsType(TypeInfo(TDouble)) then begin
+            tipo_valor := 'TDouble';
+
+            value_double := Prop.GetValue(FClass).AsType<TDouble>;
+
+            if value_double.HasValue then
+              valor := FloatToStr(value_double) + ', '
+            else
+              valor := 'null' + ', ';
+          end
+          else if Prop.GetValue(Fclass).IsType(TypeInfo(TDate)) then begin
+            tipo_valor := 'TDate';
+
+            value_date := Prop.GetValue(FClass).AsType<TDate>;
+
+            if value_date.HasValue then
+              valor := DateTimeToStr(value_date) + ', '
+            else
+              valor := 'null' + ', ';
+          end
+        end;
+      end;
+    except
+      on e: Exception do
+        raise Exception.Create('O valor informado (' + valores + ') na propriedade "' + Prop.Name + '" no objeto ' + FClass.ClassName + ' não é compátivel com o tipo definido na classe (' + tipo_valor + ')!');
+    end;
+
+    for i := Low(Prop.GetAttributes) to High(Prop.GetAttributes) do begin
+      if Prop.GetAttributes[i] is DadosColuna then begin
+        if DadosColuna(Prop.GetAttributes[i]).Somente_Leitura then
+          Break;
+
+        campos := campos + DadosColuna(Prop.GetAttributes[i]).Nome_Coluna + ', ';
+        valores := valores + valor;
+        Break;
+      end;
+
+      if Prop.GetAttributes[i] is ChaveEstrangeira then
+        Continue;
+    end;
   end;
 
-  strFields := Copy(strFields, 1, Length(strFields) - 2);
-  strValues := Copy(strValues, 1, Length(strValues) - 2);
-  strInsert := strInsert + ' ( ' + strFields + ' )  values ( ' + strValues + ' )';
+  campos := Copy(campos, 1, Length(campos) - 2);
+  valores := Copy(valores, 1, Length(valores) - 2);
+  comando_insert := comando_insert + ' ( ' + sLineBreak + campos + sLineBreak + ' )  values ( ' + sLineBreak + valores + sLineBreak + ' )';
 
   try
     //Executar SQL
-    Result := True;
+    Result := comando_insert;
   except
     on e: Exception do
     begin
@@ -124,7 +180,7 @@ end;
 
 class function TGenericDAO.SelectAll(Obj: TObject): string;
 begin
-//  Result := 'SELECT T1.* from ' + GetTableName(Obj) + 'T1';
+//  Result := 'SELECT T1.* from ' + GetNomeTabela(Obj) + 'T1';
 end;
 
 function TGenericDAO.SelectBasico: string;
@@ -180,7 +236,7 @@ begin
   strCampos := EmptyStr;
   adicionouWhere := False;
 
-  tabela_principal := GetTableName;
+  tabela_principal := GetNomeTabela;
   apelido_tab_principal := Copy(tabela_principal, 1, 3);
   ApelidoTabelas := TDictionary<string, string>.Create;
   ApelidoTabelas.Add(tabela_principal, apelido_tab_principal);
@@ -211,7 +267,7 @@ begin
 
               if value_str.HasValue then
                 strValor := QuotedStr(value_str)
-              else if value_str.FiltrarNull then
+              else if value_str.Value_Null then
                 strValor := ' is null '
               else
                filtrar_campo := False;
@@ -223,7 +279,7 @@ begin
 
               if value_int.HasValue then
                 strValor := IntToStr(value_int)
-              else if value_int.FiltrarNull then
+              else if value_int.Value_Null then
                 strValor := ' is null '
               else
                 filtrar_campo := False;
@@ -235,7 +291,7 @@ begin
 
               if value_double.HasValue then
                 strValor := FloatToStr(value_double)
-              else if value_double.FiltrarNull then
+              else if value_double.Value_Null then
                 strValor := ' is null '
               else
                 filtrar_campo := False;
@@ -247,14 +303,12 @@ begin
 
               if value_date.HasValue then
                 strValor := DateTimeToStr(value_date)
-              else if value_date.FiltrarNull then
+              else if value_date.Value_Null then
                 strValor := ' is null '
               else
                 filtrar_campo := False;
             end
           end;
-          else
-            raise Exception.Create('Tipo de campo não suportado!');
         end;
       except
         on e: Exception do
@@ -265,9 +319,12 @@ begin
     apelido_tab_estrangeira := EmptyStr;
 
     for Atributo in Prop.GetAttributes do begin
-      if Atributo is NomeCampo then
-        strCampos := strCampos + '  ' + apelido_tab_principal + '.' + NomeCampo(Atributo).Nome_Coluna + ', ' + sLineBreak
-      else if Atributo is ChaveEstrangeira then begin
+      if Atributo is DadosColuna then begin
+        strCampos := strCampos + '  ' + apelido_tab_principal + '.' + DadosColuna(Atributo).Nome_Coluna + ', ' + sLineBreak;
+        Continue;
+      end;
+
+      if Atributo is ChaveEstrangeira then begin
         apelido_tab_estrangeira := ChaveEstrangeira(Atributo).Apelido_Tabela_Estrangeira;
 
         //Verificando se o campo em questão faz referência a uma coluna de outra tabela
@@ -298,12 +355,14 @@ begin
           end;
 
           strCampos := strCampos + '  ' + apelido_tab_estrangeira + '.' + ChaveEstrangeira(Atributo).Coluna_Estrangeira + ', ' + sLineBreak;
-        end;
+        end
+        else
+          strCampos := strCampos + '  ' + apelido_tab_estrangeira + '.' + ChaveEstrangeira(Atributo).Coluna_Estrangeira + ', ' + sLineBreak;
       end;
     end; //for Atributo
 
     if filtrar_campo then
-      strCondicaoWhere := strCondicaoWhere + Clausula + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + PropriedadesCampo(Atributo).Name + strIgualdade + strValor + sLineBreak;
+      strCondicaoWhere := strCondicaoWhere + Clausula + IfThen(apelido_tab_estrangeira = EmptyStr, apelido_tab_principal, apelido_tab_estrangeira) + '.' + DadosColuna(Atributo).Nome_Coluna + strIgualdade + strValor + sLineBreak;
   end;
 
   strCampos := Trim(strCampos);
@@ -355,14 +414,14 @@ begin
   strCampos := EmptyStr;
   adicionouWhere := False;
 
-//  scriptUpdate.Add('update ' + GetTableName(Obj) + ' set ');
+//  scriptUpdate.Add('update ' + GetNomeTabela(Obj) + ' set ');
 
   Contexto := TRttiContext.Create;
   TypObj := Contexto.GetType(Obj.ClassInfo);
 
   for Prop in TypObj.GetProperties do begin
     for Atributo in Prop.GetAttributes do begin
-      if Atributo is PropriedadesCampo then begin
+//      if Atributo is PropriedadesCampo then begin
         strValor := EmptyStr;
 
         case Prop.GetValue(Obj).Kind of
@@ -378,19 +437,16 @@ begin
           raise Exception.Create('Tipo de campo não suportado!');
         end;
 
-        if PropriedadesCampo(Atributo).Chave then begin
-//          if strValor = '' then
-//            raise Exception.Create('Foi informado uma chave primaria sem valor!');
-
-          if adicionouWhere then
-            strCondicaoWhere := strCondicaoWhere + 'and ' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak
-          else
-            strCondicaoWhere := 'where ' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak;
-        end
-        else begin
-          strCampos := strCampos + '  ' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + ',' + sLineBreak;
-        end;
-      end;
+//        if PropriedadesCampo(Atributo).Chave then begin
+//          if adicionouWhere then
+//            strCondicaoWhere := strCondicaoWhere + 'and ' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak
+//          else
+//            strCondicaoWhere := 'where ' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + sLineBreak;
+//        end
+//        else begin
+//          strCampos := strCampos + '  ' + PropriedadesCampo(Atributo).Name + ' = ' + strValor + ',' + sLineBreak;
+//        end;
+//      end;
     end;
   end;
   strCampos := Trim(strCampos);

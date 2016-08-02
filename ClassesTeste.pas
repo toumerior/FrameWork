@@ -19,17 +19,17 @@ type
   public
     constructor Create; override;
 
-    [NomeCampo('ID_PRODUTO', True)]
+    [DadosColuna('ID_PRODUTO', True, False)]
     property ID_PRODUTO: TInteger read FID_PRODUTO write SetID_PRODUTO;
 
-    [NomeCampo('NOME', False)]
+    [DadosColuna('NOME', False, False)]
     property NOME: TString read FNOME write SetNOME;
 
-    [NomeCampo('ID_MARCA', False)]
+    [DadosColuna('ID_MARCA', False, False)]
     [ChaveEstrangeira('MARCAS', 'MAR', 'ID_MARCA', Inner)]
     property ID_MARCA: TInteger read FID_MARCA write SetID_MARCA;
 
-    [NomeCampo('NOME_MARCA', False)]
+    [DadosColuna('NOME_MARCA', False, True)]
     property NOME_MARCA: TString read FNOME_MARCA;
   end;
 

@@ -9,12 +9,12 @@ type
   private
     FValue: T;
     FHasValue: IInterface;
-    FFiltrarNull: Boolean;
+    FValue_Null: Boolean;
 
     function GetValue: T;
     function GetHasValue: Boolean;
-    function GetFiltrarNull: Boolean;
-    procedure SetFiltrarNull(const Value: Boolean);
+    function GetValue_Null: Boolean;
+    procedure SetValue_Null(const Value: Boolean);
 
   public
     constructor Create(AValue: T);
@@ -24,7 +24,7 @@ type
 
     property HasValue: Boolean read GetHasValue;
     property Value: T read GetValue;
-    property FiltrarNull: Boolean read GetFiltrarNull write SetFiltrarNull;
+    property Value_Null: Boolean read GetValue_Null write SetValue_Null;
 
     class operator NotEqual(ALeft, ARight: Nullable<T>): Boolean;
     class operator Equal(ALeft, ARight: Nullable<T>): Boolean;
@@ -100,9 +100,9 @@ begin
   Result := Value.Value;
 end;
 
-function Nullable<T>.GetFiltrarNull: Boolean;
+function Nullable<T>.GetValue_Null: Boolean;
 begin
-  Result := FFiltrarNull;
+  Result := FValue_Null;
 end;
 
 function Nullable<T>.GetHasValue: Boolean;
@@ -157,9 +157,9 @@ begin
     Result := ALeft.HasValue <> ARight.HasValue;
 end;
 
-procedure Nullable<T>.SetFiltrarNull(const Value: Boolean);
+procedure Nullable<T>.SetValue_Null(const Value: Boolean);
 begin
-  FFiltrarNull := Value;
+  FValue_Null := Value;
 end;
 
 end.
