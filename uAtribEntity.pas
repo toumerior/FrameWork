@@ -3,7 +3,7 @@ unit uAtribEntity;
 interface
 
 type
-  TTipoLigacao = (Inner, Left);
+  TTipoLigacao = (Inner, Left, Nenhum);
 
 type
   NomeTabela = class(TCustomAttribute)

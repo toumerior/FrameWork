@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, uAluno, uGenericDAO, Vcl.StdCtrls,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, uGenericDAO, Vcl.StdCtrls,
   FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf,
   FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async,
   FireDAC.Phys, FireDAC.Phys.Oracle, FireDAC.Phys.OracleDef, FireDAC.VCLUI.Wait,
@@ -12,14 +12,10 @@ uses
 
 type
   TForm1 = class(TForm)
-    Button1: TButton;
     btn1: TButton;
     m: TMemo;
-    Button2: TButton;
     Button3: TButton;
-    procedure Button1Click(Sender: TObject);
     procedure btn1Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
   private
     { Private declarations }
@@ -36,7 +32,6 @@ implementation
 
 procedure TForm1.btn1Click(Sender: TObject);
 var
-  aluno: TAluno;
   produto: TProduto;
 begin
   produto := TProduto.Create;
@@ -45,30 +40,9 @@ begin
 //  produto.ID_MARCA := 10;
 //  produto.Classe := TObject(produto);
   produto.Nome.Value_Null := True;
+  produto.NOME_MARCA := 'TRAMONTINA';
 
-  m.Text := produto.SelectBasico;
-end;
-
-procedure TForm1.Button1Click(Sender: TObject);
-var
-  produto: TProduto;
-begin
-  produto := TProduto.Create;
-  produto.ID_PRODUTO := 1;
-  produto.NOME := 'OI';
-  produto.ID_MARCA := 10;
-  produto.Classe := TObject(produto);
-
-  m.Text := produto.SelectBasico;
-end;
-
-procedure TForm1.Button2Click(Sender: TObject);
-var
-//  x: Anulavel<Integer>;
-  x: TInteger;
-begin
-  x := 2;
-
+  m.Text := produto.Select;
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
@@ -79,7 +53,6 @@ begin
   produto.ID_PRODUTO := 1;
   produto.NOME := 'OI';
   produto.ID_MARCA := 10;
-  produto.Classe := TObject(produto);
 
   m.Text := produto.Insert;
 end;

@@ -6,7 +6,6 @@ uses
   uGenericDAO in 'uGenericDAO.pas',
   uAtribEntity in 'uAtribEntity.pas',
   uEntity in 'uEntity.pas',
-  uAluno in 'uAluno.pas',
   uTiposPrimitivos in 'uTiposPrimitivos.pas',
   Foo in 'Foo.pas',
   ClassesTeste in 'ClassesTeste.pas';
