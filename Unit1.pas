@@ -39,6 +39,7 @@ begin
 //  produto.NOME := 'OI';
 //  produto.ID_MARCA := 10;
 //  produto.Classe := TObject(produto);
+// Bruno Viadinho
   produto.Nome.Value_Null := True;
   produto.NOME_MARCA := 'TRAMONTINA';
 
