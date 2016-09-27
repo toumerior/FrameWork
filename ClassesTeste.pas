@@ -29,7 +29,7 @@ type
     [ChaveEstrangeira('MARCAS', 'MAR', 'ID_MARCA', Inner)]
     property ID_MARCA: TInteger read FID_MARCA write SetID_MARCA;
 
-    [DadosColuna('NOME_MARCA', False, True)]
+    [DadosColuna('NOME_MARCA', False, False)]
     [ChaveEstrangeira('MARCAS', 'MAR', '', Nenhum)]
     property NOME_MARCA: TString read FNOME_MARCA write FNome_Marca;
   end;

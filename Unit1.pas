@@ -15,8 +15,10 @@ type
     btn1: TButton;
     m: TMemo;
     Button3: TButton;
+    Button1: TButton;
     procedure btn1Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -45,6 +47,20 @@ begin
   m.Text := produto.Select;
 end;
 
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  produto: TProduto;
+begin
+  produto := TProduto.Create;
+  produto.ID_PRODUTO := 1;
+  produto.NOME_MARCA.Value_Null := True;
+  produto.NOME := 'OI';
+  produto.ID_MARCA := 10;
+
+
+  m.Text := produto.Update;
+end;
+
 procedure TForm1.Button3Click(Sender: TObject);
 var
   produto: TProduto;
@@ -53,6 +69,7 @@ begin
   produto.ID_PRODUTO := 1;
   produto.NOME := 'OI';
   produto.ID_MARCA := 10;
+  produto.NOME_MARCA := '';
 
   m.Text := produto.Insert;
 end;
